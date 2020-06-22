@@ -10,7 +10,7 @@ python3 -m venv env
 source env/bin/activate  # On Windows use `env\Scripts\activate`
 
 # Install Django and Django REST framework into the virtual environment
-pip install -r requiremtns.txt
+pip install -r requirements.txt
 
 # Run migrations
 python manage.py migrate
