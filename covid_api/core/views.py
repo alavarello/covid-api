@@ -1,9 +1,7 @@
-from django.shortcuts import render
-from rest_framework.generics import GenericAPIView
-
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from .services import CovidService
 
 
 class DataView(APIView):
@@ -12,6 +10,6 @@ class DataView(APIView):
         """
         Return a list of all users.
         """
-
-        response = {'hello_world': 'hello_world'}
+        covid_service = CovidService.get_solo()
+        response = {'count': covid_service.count()}
         return Response(response)
