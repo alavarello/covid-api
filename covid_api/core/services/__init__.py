@@ -1,1 +1,1 @@
-from .covid_service import CovidService
+from .covid_service import CovidService, DataFrameWrapper
