@@ -13,8 +13,19 @@ class DataFrameWrapper:
         # Count rows
         return len(self.data_frame.index)
 
-    def filter(self, column, value):
+    def copy(self):
+        return DataFrameWrapper(self.data_frame.copy())
+
+    def filter_eq(self, column, value):
         self.data_frame = self.data_frame.loc[self.data_frame[column] == value]
+        return self
+
+    def filter_ge(self, column, value):
+        self.data_frame = self.data_frame.loc[self.data_frame[column] >= value]
+        return self
+
+    def filter_le(self, column, value):
+        self.data_frame = self.data_frame.loc[self.data_frame[column] <= value]
         return self
 
     def group_by(self, columns):
@@ -30,8 +41,12 @@ class DataFrameWrapper:
         return self
 
     def to_json(self, orient="table"):
-        json_string = self.data_frame.to_json(orient=orient)
+        df = self.data_frame.reset_index(drop=True)
+        json_string = df.to_json(orient=orient)
         return json.loads(json_string)['data']
+
+    def __getitem__(self, column):
+        return self.data_frame[column]
 
 
 class CovidService:
