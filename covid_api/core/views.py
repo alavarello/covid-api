@@ -1,11 +1,12 @@
 from drf_yasg import openapi
+from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Province
 from .services import CovidService, DataFrameWrapper
-
+from .parameters import DateParameter
 # ----- GENERIC VIEWS ----- #
 
 
@@ -41,6 +42,15 @@ class ProcessDataView(APIView):
 
         return Response(data.to_json())
 
+    @swagger_auto_schema(
+        manual_parameters=[
+            Parameter("icu", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+            Parameter("dead", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+            Parameter("respirator", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+            DateParameter("from"),
+            DateParameter("to"),
+        ]
+    )
     def get(self, request, **kwargs):
         data = CovidService.get_data()
         data = self.filter_data(request, data, **kwargs)
@@ -128,9 +138,9 @@ class ProvinceSummaryView(ProvinceListView, SummaryView):
 
 # --- PROVINCES VIEWS --- #
 
-class ProvincesListView(ProcessDataView):
+class ProvincesListView(APIView):
 
-    def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
+    def get(self, request) -> Response:
         return Response(Province.PROVINCES)
 
 
