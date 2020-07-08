@@ -7,6 +7,8 @@ from rest_framework.views import APIView
 from .models import Province
 from .services import CovidService, DataFrameWrapper
 from .parameters import DateParameter
+
+
 # ----- GENERIC VIEWS ----- #
 
 
@@ -156,3 +158,13 @@ class ProvincesProcessView(ProcessDataView):
         )
 
         return provinces
+
+
+# --- LAST UPDATE VIEW --- #
+
+class LastUpdateView(APIView):
+
+    def get(self, request, **kwargs):
+        data = CovidService.get_data()
+        last_update = data['ultima_actualizacion'].max()
+        return Response({'last_update': last_update})
