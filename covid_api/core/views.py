@@ -11,7 +11,6 @@ from .parameters import DateParameter
 
 # ----- GENERIC VIEWS ----- #
 
-
 class ProcessDataView(APIView):
 
     def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
@@ -70,26 +69,6 @@ class CountView(ProcessDataView):
         return Response({'count': data.count()})
 
 
-class SummaryView(ProcessDataView):
-
-    def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
-        """
-        Return a list of all users.
-        """
-        last_update = data['ultima_actualizacion'].max()
-        dead_data = data.copy()
-        confirmed_data = data.copy()
-        summary = {
-            'total_fallecidos': dead_data.filter_eq('fallecido', 'SI').count(),
-            'nuevos_fallecidos': dead_data.filter_eq('fecha_fallecimiento', last_update).count(),
-            'total_confirmados': confirmed_data.count(),
-            'nuevos_confirmados': confirmed_data.filter_eq('fecha_diagnostico', last_update).count(),
-            'ultima_actualizacion': last_update
-        }
-
-        return Response(summary)
-
-
 # --- ACTIVE CASE VIEWS --- #
 
 class ActiveCasesView(ProcessDataView):
@@ -131,10 +110,6 @@ class ProvinceListView(ProcessDataView):
 
 
 class ProvinceCountView(ProvinceListView, CountView):
-    pass
-
-
-class ProvinceSummaryView(ProvinceListView, SummaryView):
     pass
 
 
