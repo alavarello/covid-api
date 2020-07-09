@@ -4,7 +4,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Province
+from .models import Province, Classification
 from .services import CovidService, DataFrameWrapper
 from .parameters import DateParameter
 
@@ -17,7 +17,10 @@ class ProcessDataView(APIView):
         return data
 
     def filter_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
-        data.filter_eq('clasificacion_resumen', 'Confirmado')
+        classification = request.GET.get('classification', None)
+        if classification is not None:
+            classification = Classification.translate(classification.lower())
+            data.filter_eq('clasificacion_resumen', classification)
         icu = request.GET.get('icu', None)
         if icu is not None:
             value = 'SI' if icu.lower() == "true" else 'NO'
@@ -48,6 +51,7 @@ class ProcessDataView(APIView):
             Parameter("icu", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
             Parameter("dead", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
             Parameter("respirator", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
+            Parameter("classification", openapi.IN_QUERY, type=openapi.TYPE_STRING),
             DateParameter("from"),
             DateParameter("to"),
         ]

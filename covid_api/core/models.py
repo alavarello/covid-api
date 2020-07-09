@@ -34,3 +34,19 @@ class Province:
     @classmethod
     def from_slug(cls, slug):
         return cls.PROVINCES.get(slug, None)
+
+
+class Classification:
+
+    classifications = {
+        'confirmed': 'Confirmado',
+        'rejected': 'Descartado',
+        'suspect': 'Sospechoso'
+    }
+
+    @classmethod
+    def translate(cls, classification):
+        data_classification = cls.classifications.get(classification)
+        return data_classification
+
+
