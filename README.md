@@ -29,9 +29,15 @@ python manage.py migrate
 ```
 
 ## Run
-Make sure the port 8000 is not being used
+
+Make sure the port 8000 is not being used.
 ```shell script
 python manage.py runserver
+```
+
+To add the cron that updates the data.
+```shell script
+python manage.py crontab add
 ```
 
 ## Docs

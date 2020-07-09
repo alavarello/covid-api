@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'covid_api.core',
     # THIRD PARTIES
     'drf_yasg',
+    'django_crontab'
 ]
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
@@ -60,6 +61,11 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+CRONTAB_COMMAND_SUFFIX = '2>&1'
+CRONJOBS = [
+    ('00 */4 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
+]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
