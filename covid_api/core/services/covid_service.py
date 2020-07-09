@@ -69,7 +69,7 @@ class CovidService:
                 COVID_FILE_NAME,
                 encoding='utf-8'
             )
-        return DataFrameWrapper(cls._raw_data.copy(deep=True))
+        return DataFrameWrapper(cls._raw_data)
 
     @classmethod
     def update_data(cls):
