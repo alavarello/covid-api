@@ -118,7 +118,8 @@ class ProvinceCountView(ProvinceListView, CountView):
 class ProvincesListView(APIView):
 
     def get(self, request) -> Response:
-        return Response(Province.PROVINCES)
+        province_array = [{'slug': slug, 'province': province} for slug, province in Province.PROVINCES.items()]
+        return Response(province_array)
 
 
 class ProvincesProcessView(ProcessDataView):
