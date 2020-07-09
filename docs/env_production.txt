@@ -1,0 +1,3 @@
+SECRET_KEY=__ADD__ME__
+DEBUG=False
+SWAGGER_URL=https://covid-itba-api.herokuapp.com/api

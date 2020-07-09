@@ -5,6 +5,8 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+from covid_api.settings import SWAGGER_URL
+
 schema_view = get_schema_view(
    openapi.Info(
       title="Snippets API",
@@ -16,7 +18,7 @@ schema_view = get_schema_view(
    ),
    public=True,
    permission_classes=(permissions.AllowAny,),
-   url="https://covid19api.it.itba.edu.ar/api"
+   url=SWAGGER_URL
 )
 
 

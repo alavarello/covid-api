@@ -26,7 +26,13 @@ pip install -r requirements.txt
 
 # Run migrations
 python manage.py migrate
+
+# Create .env file
+cp docs/env.txt covid_api/.env  # In development
+cp docs/env_production.txt covid_api/.env # In production
 ```
+
+Once you copy the env file change the secrete key for a random string 
 
 ## Run
 
