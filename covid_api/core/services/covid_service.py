@@ -68,7 +68,7 @@ class CovidService:
                     encoding='utf-16'
                 )
             else:
-                # Update the data from the url
+                # Update the data from the url and save the file
                 cls.update_data()
         return DataFrameWrapper(cls._raw_data.copy(deep=True))
 
