@@ -61,21 +61,21 @@ class CovidService:
     @classmethod
     def get_data(cls) -> DataFrameWrapper:
         if cls._raw_data is None:
-            # Try to get the data from a file first
-            if os.path.isfile(COVID_FILE_NAME):
-                cls._raw_data = pd.read_csv(
-                    COVID_FILE_NAME,
-                    encoding='utf-16'
-                )
-            else:
+            if not os.path.isfile(COVID_FILE_NAME):
                 # Update the data from the url and save the file
                 cls.update_data()
+
+            cls._raw_data = pd.read_csv(
+                COVID_FILE_NAME,
+                encoding='utf-8'
+            )
         return DataFrameWrapper(cls._raw_data.copy(deep=True))
 
     @classmethod
     def update_data(cls):
-        cls._raw_data = pd.read_csv(
+        data_frame = pd.read_csv(
             cls.data_url,
             encoding='utf-16'
         )
-        cls._raw_data.to_csv(COVID_FILE_NAME, index=False, encoding='utf-16')
+        data_frame.to_csv(COVID_FILE_NAME, index=False)
+        cls._raw_data = None
