@@ -1,6 +1,9 @@
 import json
+import os
 
 import pandas as pd
+
+from covid_api.settings import COVID_FILE_NAME
 
 
 class DataFrameWrapper:
@@ -53,11 +56,26 @@ class CovidService:
 
     _raw_data = None
 
+    data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
+
     @classmethod
     def get_data(cls) -> DataFrameWrapper:
         if cls._raw_data is None:
-            cls._raw_data = pd.read_csv(
-                'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv',
-                encoding='utf-16'
-            )
+            # Try to get the data from a file first
+            if os.path.isfile(COVID_FILE_NAME):
+                cls._raw_data = pd.read_csv(
+                    COVID_FILE_NAME,
+                    encoding='utf-16'
+                )
+            else:
+                # Update the data from the url
+                cls.update_data()
         return DataFrameWrapper(cls._raw_data.copy(deep=True))
+
+    @classmethod
+    def update_data(cls):
+        cls._raw_data = pd.read_csv(
+            cls.data_url,
+            encoding='utf-16'
+        )
+        cls._raw_data.to_csv(COVID_FILE_NAME, index=False, encoding='utf-16')
