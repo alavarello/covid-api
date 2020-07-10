@@ -63,7 +63,6 @@ class ProcessDataView(APIView):
         response = self.create_response(request, data, **kwargs)
         return response
 
-
 class CountView(ProcessDataView):
 
     def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
@@ -115,6 +114,34 @@ class ProvinceListView(ProcessDataView):
 
 class ProvinceCountView(ProvinceListView, CountView):
     pass
+
+
+class ProvinceSummaryView(ProcessDataView):
+
+    def process_data(self, request, data: DataFrameWrapper,province_slug=None, **kwargs) -> DataFrameWrapper:
+        province = Province.from_slug(province_slug)
+        summary = data.filter_eq(
+            'carga_provincia_nombre',
+            province
+        )
+        summary = summary.data_frame
+
+        cases_count = summary.groupby(['carga_provincia_nombre', 'fecha_diagnostico'], as_index=False).count()
+
+        df2 = cases_count[['fecha_diagnostico']].copy()
+        df2['casos'] = cases_count['id_evento_caso']
+
+        summary = summary.loc[summary['fallecido'] == 'SI']
+        deaths_count = summary.groupby(['carga_provincia_nombre', 'fecha_diagnostico'], as_index=False).count()[
+            ['fecha_diagnostico', 'id_evento_caso']]
+        deaths_count = deaths_count.rename(columns={'id_evento_caso': "muertes"})
+
+        df2 = df2.merge(deaths_count, on='fecha_diagnostico', how='outer')
+
+        df2['muertes_acum'] = df2['muertes'].cumsum()
+        df2['casos_acum'] = df2['casos'].cumsum()
+
+        return DataFrameWrapper(df2)
 
 
 # --- PROVINCES VIEWS --- #

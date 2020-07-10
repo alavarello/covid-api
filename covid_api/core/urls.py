@@ -9,4 +9,5 @@ urlpatterns = [
     path('provinces/', views.ProvincesListView.as_view(), name='provinces-view'),
     path('province/<str:province_slug>/', views.ProvinceListView.as_view(), name='province-view'),
     path('province/<str:province_slug>/count/', views.ProvinceCountView.as_view(), name='province-count-view'),
+    path('province/<str:province_slug>/summary/', views.ProvinceSummaryView.as_view(), name='province-summary-view'),
 ]
