@@ -141,6 +141,8 @@ class ProvinceSummaryView(ProcessDataView):
         df2['muertes_acum'] = df2['muertes'].cumsum()
         df2['casos_acum'] = df2['casos'].cumsum()
 
+        df2 = df2.fillna(value=0)
+
         return DataFrameWrapper(df2)
 
 
