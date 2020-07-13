@@ -38,7 +38,7 @@ Once you copy the env file change the secrete key for a random string
 
 Make sure the port 8000 is not being used.
 ```shell script
-python manage.py runserver
+gunicorn covid_api.wsgi --workers 3 --timeout 600 --bind 0.0.0.0:8000 -D
 ```
 
 To add the cron that updates the data.
