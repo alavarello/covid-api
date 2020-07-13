@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -58,9 +59,20 @@ class CovidService:
 
     data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
 
+    # Refresh time in hours
+    refresh_rate = 1
+
+    last_refresh = None
+
     @classmethod
     def get_data(cls) -> DataFrameWrapper:
-        if cls._raw_data is None:
+        is_time_to_refresh = True
+
+        if cls.last_refresh:
+            refresh_time = cls.last_refresh + timedelta(hours=cls.refresh_rate)
+            is_time_to_refresh = refresh_time < datetime.now()
+
+        if cls._raw_data is None or is_time_to_refresh:
             if not os.path.isfile(COVID_FILE_NAME):
                 # Update the data from the url and save the file
                 cls.update_data()
@@ -68,6 +80,12 @@ class CovidService:
             cls._raw_data = pd.read_csv(
                 COVID_FILE_NAME,
                 encoding='utf-8'
+            )
+            # Get the base hour
+            cls.last_refresh = datetime.now().replace(
+                minute=0,
+                second=0,
+                microsecond=0
             )
         return DataFrameWrapper(cls._raw_data)
 
