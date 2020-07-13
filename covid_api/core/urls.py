@@ -3,7 +3,6 @@ from django.urls import path
 from covid_api.core import views
 
 urlpatterns = [
-    path('', views.ProcessDataView.as_view(), name='all'),
     path('count/', views.CountView.as_view(), name='all-count'),
     path('last_update/', views.LastUpdateView.as_view(), name='last-update'),
     path('provinces/', views.ProvincesListView.as_view(), name='provinces-view'),
