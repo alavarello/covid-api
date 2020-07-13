@@ -138,10 +138,10 @@ class ProvinceSummaryView(ProcessDataView):
 
         df2 = df2.merge(deaths_count, on='fecha_diagnostico', how='outer')
 
+        df2 = df2.fillna(value=0)
+
         df2['muertes_acum'] = df2['muertes'].cumsum()
         df2['casos_acum'] = df2['casos'].cumsum()
-
-        df2 = df2.fillna(value=0)
 
         return DataFrameWrapper(df2)
 
