@@ -1,8 +1,10 @@
 from drf_yasg import openapi
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_csv.renderers import CSVRenderer
 
 from .models import Province, Classification
 from .services import CovidService, DataFrameWrapper
@@ -12,6 +14,8 @@ from .parameters import DateParameter
 # ----- GENERIC VIEWS ----- #
 
 class ProcessDataView(APIView):
+
+    renderer_classes = [JSONRenderer, CSVRenderer]
 
     def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
         return data
@@ -63,7 +67,10 @@ class ProcessDataView(APIView):
         response = self.create_response(request, data, **kwargs)
         return response
 
+
 class CountView(ProcessDataView):
+
+    renderer_classes = [JSONRenderer, ]
 
     def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
         """
@@ -118,7 +125,7 @@ class ProvinceCountView(ProvinceListView, CountView):
 
 class ProvinceSummaryView(ProcessDataView):
 
-    def process_data(self, request, data: DataFrameWrapper,province_slug=None, **kwargs) -> DataFrameWrapper:
+    def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> DataFrameWrapper:
         province = Province.from_slug(province_slug)
         summary = data.filter_eq(
             'carga_provincia_nombre',
