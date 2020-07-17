@@ -7,11 +7,13 @@ from rest_framework import permissions
 
 from covid_api.settings import SWAGGER_URL
 
+repository = "https://github.com/alavarello/covid-api"
+description = f"This API uses the Argentinian Ministry of Health (msal.gob.ar) dataset\n Repository: {repository}"
 schema_view = get_schema_view(
    openapi.Info(
       title="Argentine Covid-19 API",
       default_version='v1',
-      description="This API uses the Argentinian Ministry of Health (msal.gob.ar) dataset",
+      description=description,
       license=openapi.License(name="Creative Commons License"),
    ),
    public=True,
