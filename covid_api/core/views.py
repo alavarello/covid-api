@@ -5,6 +5,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_csv.renderers import CSVRenderer
+import pandas as pd
 
 from .models import Province, Classification
 from .services import CovidService, DataFrameWrapper
@@ -110,7 +111,12 @@ class ProvinceSummaryView(ProcessDataView):
             'carga_provincia_nombre',
             province
         )
+
         summary = summary.data_frame
+
+        range = pd.date_range(start='2/15/2020', end='07/16/2020')
+        range_strings = range.format(formatter=lambda x: x.strftime('%Y-%m-%d'))
+        fechas = pd.DataFrame(range_strings, columns=['fecha_diagnostico'])
 
         cases_count = summary.groupby(['carga_provincia_nombre', 'fecha_diagnostico'], as_index=False).count()
 
@@ -118,18 +124,19 @@ class ProvinceSummaryView(ProcessDataView):
         df2['casos'] = cases_count['id_evento_caso']
 
         summary = summary.loc[summary['fallecido'] == 'SI']
-        deaths_count = summary.groupby(['carga_provincia_nombre', 'fecha_diagnostico'], as_index=False).count()[
-            ['fecha_diagnostico', 'id_evento_caso']]
-        deaths_count = deaths_count.rename(columns={'id_evento_caso': "muertes"})
+        deaths_count = summary.groupby(['carga_provincia_nombre', 'fecha_fallecimiento'], as_index=False).count()[
+            ['fecha_fallecimiento', 'id_evento_caso']]
+        deaths_count = deaths_count.rename(columns={'id_evento_caso': "muertes",'fecha_fallecimiento':"fecha_diagnostico"})
 
-        df2 = df2.merge(deaths_count, on='fecha_diagnostico', how='outer')
+        fechas = fechas.merge(df2, on='fecha_diagnostico', how='left')
+        fechas = fechas.merge(deaths_count, on='fecha_diagnostico', how='left')
 
-        df2 = df2.fillna(value=0)
+        fechas = fechas.fillna(value=0)
 
-        df2['muertes_acum'] = df2['muertes'].cumsum()
-        df2['casos_acum'] = df2['casos'].cumsum()
+        fechas['muertes_acum'] = fechas['muertes'].cumsum()
+        fechas['casos_acum'] = fechas['casos'].cumsum()
 
-        return DataFrameWrapper(df2)
+        return DataFrameWrapper(fechas)
 
 
 # --- PROVINCES VIEWS --- #
