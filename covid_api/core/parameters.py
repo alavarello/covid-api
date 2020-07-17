@@ -12,3 +12,13 @@ class DateParameter(Parameter):
             pattern="\d{4}-\d{2}-\d{2}",
             description='yyyy-mm-dd'
         )
+
+
+class ClassificationParameter(Parameter):
+
+    def __init__(self):
+        super().__init__(
+            'classification', openapi.IN_QUERY,
+            type=openapi.TYPE_STRING,
+            enum=['confirmed', 'suspect', 'rejected']
+        )

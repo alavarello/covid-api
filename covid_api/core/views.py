@@ -9,7 +9,7 @@ import pandas as pd
 
 from .models import Province, Classification
 from .services import CovidService, DataFrameWrapper
-from .parameters import DateParameter
+from .parameters import DateParameter, ClassificationParameter
 
 
 # ----- GENERIC VIEWS ----- #
@@ -56,7 +56,7 @@ class ProcessDataView(APIView):
             Parameter("icu", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
             Parameter("dead", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
             Parameter("respirator", openapi.IN_QUERY, type=openapi.TYPE_BOOLEAN),
-            Parameter("classification", openapi.IN_QUERY, type=openapi.TYPE_STRING),
+            ClassificationParameter(),
             DateParameter("from"),
             DateParameter("to"),
         ],
