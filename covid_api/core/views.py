@@ -1,3 +1,7 @@
+from datetime import datetime
+from itertools import islice
+
+import xlrd
 from drf_yasg import openapi
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
@@ -156,3 +160,50 @@ class CountrySummaryView(ProcessDataView):
         summary = CovidService.summary([], from_date, to_date, data)
 
         return summary
+
+
+# --- METRICS VIEW --- #
+
+class StatsView(APIView):
+    """
+    Returns the cases and dead per millions in each province.
+    """
+
+    def get(self, requests):
+        workbook = xlrd.open_workbook('poblacion.xls')
+        response = {}
+        data = CovidService.get_data()
+        # Filter the data
+        data = data.filter_eq('clasificacion_resumen', 'Confirmado')
+        for worksheet in workbook.sheets():
+            # Get today year
+            split_name = worksheet.name.split('-')
+            if len(split_name) < 2:
+                continue
+
+            province_slug = split_name[0]
+            province_name = Province.from_slug(province_slug)
+            if province_name:
+                province_data = data.copy().filter_eq(
+                    'carga_provincia_nombre',
+                    province_name
+                )
+                population = worksheet.cell(16, 1).value
+            else:
+                province_data = data.copy()
+                province_name = "Argentina"
+                population = worksheet.cell(15, 1).value
+
+            # Get population from 2020
+            cases_amount = province_data.count()
+            cases_per_million = cases_amount*1000000/population
+            dead_amount = province_data.filter_eq('fallecido', 'SI').count()
+            dead_per_million = dead_amount*1000000/population
+            response.update({
+                province_name: {
+                    'población': population,
+                    'muertes_por_millón': round(dead_per_million),
+                    'casos_por_millón': round(cases_per_million),
+            }})
+
+        return Response(response)
