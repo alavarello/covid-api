@@ -58,7 +58,7 @@ class ProcessDataView(APIView):
             Parameter("classification", openapi.IN_QUERY, type=openapi.TYPE_STRING),
             DateParameter("from"),
             DateParameter("to"),
-        ]
+        ],
     )
     def get(self, request, **kwargs):
         data = CovidService.get_data()
@@ -69,48 +69,24 @@ class ProcessDataView(APIView):
 
 
 class CountView(ProcessDataView):
+    """
+    Returns the amount of cases after applying the filters
+    """
 
     renderer_classes = [JSONRenderer, ]
 
     def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
-        """
-        Return a list of all users.
-        """
         return Response({'count': data.count()})
-
-
-# --- ACTIVE CASE VIEWS --- #
-
-class ActiveCasesView(ProcessDataView):
-
-    def filter_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
-        data = super(ProcessDataView).filter_data(request, data, **kwargs)
-        data = data.filter_eq(
-            'clasificacion_resumen',
-            'Confirmado'
-        )
-        return data
-
-    def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
-        """
-        Return a list of all users.
-        """
-        data = CovidService.get_data()
-        active_cases_per_day = data.group_by(
-            'fecha_diagnostico'
-        ).size()
-
-        return active_cases_per_day
 
 
 # --- PROVINCE VIEWS --- #
 
 class ProvinceListView(ProcessDataView):
+    """
+    Returns the cases for the given province
+    """
 
     def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> Response:
-        """
-        Return a list of all users.
-        """
         province = Province.from_slug(province_slug)
         summary = data.filter_eq(
             'carga_provincia_nombre',
@@ -120,6 +96,9 @@ class ProvinceListView(ProcessDataView):
 
 
 class ProvinceCountView(ProvinceListView, CountView):
+    """
+    Returns the amount of cases after applying the filters for the given province
+    """
     pass
 
 
@@ -156,29 +135,21 @@ class ProvinceSummaryView(ProcessDataView):
 # --- PROVINCES VIEWS --- #
 
 class ProvincesListView(APIView):
+    """
+    Returns the provinces with their respective slug
+    """
 
     def get(self, request) -> Response:
         province_array = [{'slug': slug, 'province': province} for slug, province in Province.PROVINCES.items()]
         return Response(province_array)
 
 
-class ProvincesProcessView(ProcessDataView):
-
-    def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
-        """
-        Return a list of all users.
-        """
-        data = CovidService.get_data()
-        provinces = data.group_by(
-            'carga_provincia_nombre',
-        )
-
-        return provinces
-
-
 # --- LAST UPDATE VIEW --- #
 
 class LastUpdateView(APIView):
+    """
+    Returns the date that the file was last updated
+    """
 
     def get(self, request, **kwargs):
         data = CovidService.get_data()
