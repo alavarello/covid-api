@@ -32,24 +32,42 @@ cp docs/env.txt covid_api/.env  # In development
 cp docs/env_production.txt covid_api/.env # In production
 ```
 
-Once you copy the env file change the secrete key for a random string 
+**Important**: Once you copy the env file change the secrete key for a random string 
 
-## Run
+## Update data
 
-Make sure the port 8000 is not being used.
-```shell script
-gunicorn covid_api.wsgi --workers 3 --timeout 600 --bind 0.0.0.0:8000 -D
-```
+**Important**: Always make sure you have the `env` activate before running any command.
 
 To add the cron that updates the data.
 ```shell script
 python manage.py crontab add
 ```
 
+To force the update
+```shell script
+python manage.py update_data
+```
+
+**Note**: This may take up to an hour to update.
+ 
+## Run
+
+**Important**: Always make sure you have the `env` activate before running any command.
+
+### Development
+Make sure the port 8000 is not being used.
+```shell script
+python manage.py runserver
+```
+
+### Production
+Make sure the port 8000 is not being used.
+```shell script
+gunicorn covid_api.wsgi --workers 3 --timeout 600 --bind 0.0.0.0:8000 -D
+```
+
 ## Docs
 ```shell script
 # Access swagger
 http://localhost:8000/api/v1/swagger/
-# Access redoc
-http://localhost:8000/api/v1/redoc/
 ```
