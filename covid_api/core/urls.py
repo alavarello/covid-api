@@ -4,6 +4,7 @@ from covid_api.core import views
 
 urlpatterns = [
     path('count/', views.CountView.as_view(), name='all-count'),
+    path('summary/', views.CountrySummaryView.as_view(), name='country-summary-view'),
     path('last_update/', views.LastUpdateView.as_view(), name='last-update'),
     path('provinces/', views.ProvincesListView.as_view(), name='provinces-view'),
     path('province/<str:province_slug>/', views.ProvinceListView.as_view(), name='province-view'),

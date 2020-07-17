@@ -97,3 +97,40 @@ class CovidService:
         )
         data_frame.to_csv(COVID_FILE_NAME, index=False)
         cls._raw_data = None
+
+    @classmethod
+    def summary(cls, group_by_vector, start_date, end_date, data):
+
+        start_date = start_date if start_date else '2020-02-11'
+        end_date = end_date if end_date else data['ultima_actualizacion'].max()
+
+        summary = data.data_frame
+
+        range = pd.date_range(start=start_date, end=end_date)
+        range_strings = range.format(formatter=lambda x: x.strftime('%Y-%m-%d'))
+        df = pd.DataFrame(range_strings, columns=['fecha_diagnostico'])
+
+        cases_count = summary.groupby(
+            [elem for elem in group_by_vector] + ['fecha_diagnostico'],
+            as_index=False
+        ).count()
+        df2 = cases_count[['fecha_diagnostico']].copy()
+        df2['casos'] = cases_count['id_evento_caso']
+
+        summary = summary.loc[summary['fallecido'] == 'SI']
+        deaths_count = summary.groupby(
+            [elem for elem in group_by_vector] + ['fecha_fallecimiento'],
+            as_index=False
+        ).count()[['fecha_fallecimiento', 'id_evento_caso']]
+        deaths_count = deaths_count.rename(
+            columns={'id_evento_caso': "muertes", 'fecha_fallecimiento': "fecha_diagnostico"})
+
+        df = df.merge(df2, on='fecha_diagnostico', how='left')
+        df = df.merge(deaths_count, on='fecha_diagnostico', how='left')
+
+        df = df.fillna(value=0)
+
+        df['muertes_acum'] = df['muertes'].cumsum()
+        df['casos_acum'] = df['casos'].cumsum()
+
+        return DataFrameWrapper(df)

@@ -106,37 +106,18 @@ class ProvinceCountView(ProvinceListView, CountView):
 class ProvinceSummaryView(ProcessDataView):
 
     def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> DataFrameWrapper:
+        from_date = request.GET.get('from', None)
+        to_date = request.GET.get('to', None)
+
         province = Province.from_slug(province_slug)
         summary = data.filter_eq(
             'carga_provincia_nombre',
             province
         )
 
-        summary = summary.data_frame
+        summary = CovidService.summary(['carga_provincia_nombre'], from_date, to_date, summary)
 
-        range = pd.date_range(start='2/15/2020', end='07/16/2020')
-        range_strings = range.format(formatter=lambda x: x.strftime('%Y-%m-%d'))
-        fechas = pd.DataFrame(range_strings, columns=['fecha_diagnostico'])
-
-        cases_count = summary.groupby(['carga_provincia_nombre', 'fecha_diagnostico'], as_index=False).count()
-
-        df2 = cases_count[['fecha_diagnostico']].copy()
-        df2['casos'] = cases_count['id_evento_caso']
-
-        summary = summary.loc[summary['fallecido'] == 'SI']
-        deaths_count = summary.groupby(['carga_provincia_nombre', 'fecha_fallecimiento'], as_index=False).count()[
-            ['fecha_fallecimiento', 'id_evento_caso']]
-        deaths_count = deaths_count.rename(columns={'id_evento_caso': "muertes",'fecha_fallecimiento':"fecha_diagnostico"})
-
-        fechas = fechas.merge(df2, on='fecha_diagnostico', how='left')
-        fechas = fechas.merge(deaths_count, on='fecha_diagnostico', how='left')
-
-        fechas = fechas.fillna(value=0)
-
-        fechas['muertes_acum'] = fechas['muertes'].cumsum()
-        fechas['casos_acum'] = fechas['casos'].cumsum()
-
-        return DataFrameWrapper(fechas)
+        return summary
 
 
 # --- PROVINCES VIEWS --- #
@@ -162,3 +143,16 @@ class LastUpdateView(APIView):
         data = CovidService.get_data()
         last_update = data['ultima_actualizacion'].max()
         return Response({'last_update': last_update})
+
+
+# --- COUNTRY SUMMARY VIEW --- #
+
+class CountrySummaryView(ProcessDataView):
+
+    def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
+        from_date = request.GET.get('from', None)
+        to_date = request.GET.get('to', None)
+
+        summary = CovidService.summary([], from_date, to_date, data)
+
+        return summary
