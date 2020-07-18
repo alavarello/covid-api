@@ -163,11 +163,30 @@ class CountrySummaryView(ProcessDataView):
 
 
 # --- METRICS VIEW --- #
-
 class StatsView(APIView):
     """
-    Returns the cases and dead per millions in each province.
+    Returns the provinces and country stats.
     """
+
+    def province_stats(self, province_name, province_data, population):
+        # Get population from 2020
+        cases_amount = province_data.count()
+        cases_per_million = cases_amount * 1000000 / population
+        cases_per_hundred_thousand = cases_amount * 100000 / population
+        dead_amount = province_data.filter_eq('fallecido', 'SI').count()
+        dead_per_million = dead_amount * 1000000 / population
+        dead_per_hundred_thousand = dead_amount * 100000 / population
+        stats = {
+            province_name: {
+                'población': int(population),
+                'muertes_por_millón': round(dead_per_million),
+                'muertes_cada_cien_mil': round(dead_per_hundred_thousand),
+                'casos_por_millón': round(cases_per_million),
+                'casos_cada_cien_mil': round(cases_per_hundred_thousand),
+                'letalidad': round(dead_amount / cases_amount, 4),
+
+            }}
+        return stats
 
     def get(self, requests):
         workbook = xlrd.open_workbook('poblacion.xls')
@@ -176,7 +195,6 @@ class StatsView(APIView):
         # Filter the data
         data = data.filter_eq('clasificacion_resumen', 'Confirmado')
         for worksheet in workbook.sheets():
-            # Get today year
             split_name = worksheet.name.split('-')
             if len(split_name) < 2:
                 continue
@@ -194,16 +212,37 @@ class StatsView(APIView):
                 province_name = "Argentina"
                 population = worksheet.cell(15, 1).value
 
-            # Get population from 2020
-            cases_amount = province_data.count()
-            cases_per_million = cases_amount*1000000/population
-            dead_amount = province_data.filter_eq('fallecido', 'SI').count()
-            dead_per_million = dead_amount*1000000/population
-            response.update({
-                province_name: {
-                    'población': population,
-                    'muertes_por_millón': round(dead_per_million),
-                    'casos_por_millón': round(cases_per_million),
-            }})
+            province_stats = self.province_stats(
+                province_name,
+                province_data,
+                population
+            )
+            response.update(province_stats)
 
         return Response(response)
+
+
+class ProvinceStatsView(StatsView):
+    """
+    Returns a province stats.
+    """
+    def get(self, requests, province_slug=None):
+        workbook = xlrd.open_workbook('poblacion.xls')
+        data = CovidService.get_data()
+        # Filter the data
+        data = data.filter_eq('clasificacion_resumen', 'Confirmado')
+        province_name = Province.from_slug(province_slug)
+        province_data = data.filter_eq(
+            'carga_provincia_nombre',
+            province_name
+        )
+        sheet_name = f'{province_slug}-{province_name.upper()}'
+        population = workbook.sheet_by_name(sheet_name).cell(16, 1).value
+
+        province_stats = self.province_stats(
+            province_name,
+            province_data,
+            population
+        )
+
+        return Response(province_stats)
