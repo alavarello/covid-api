@@ -34,11 +34,11 @@ cp docs/env.txt covid_api/.env  # In development
 cp docs/env_production.txt covid_api/.env # In production
 ```
 
-**Important**: Once you copy the env file change the secrete key for a random string 
+**Important**: Once you copy the env file change the secret key for a random string 
 
 ## Update data
 
-**Important**: Always make sure you have the `env` activate before running any command.
+**Important**: Always make sure you have the `env` activated before running any command.
 
 To add the cron that updates the data.
 ```shell script
@@ -54,7 +54,7 @@ python manage.py update_data
  
 ## Run
 
-**Important**: Always make sure you have the `env` activate before running any command.
+**Important**: Always make sure you have the `env` activated before running any command.
 
 ### Development
 Make sure the port 8000 is not being used.
