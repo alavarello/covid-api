@@ -1,5 +1,7 @@
 # Argentine COVID-19 API
 
+This API uses the [Argentinian Ministry of Health (msal.gob.ar) dataset](http://datos.salud.gob.ar/dataset/covid-19-casos-registrados-en-la-republica-argentina)
+
 ## Installation
 
 Clone the repository using ssh or http
