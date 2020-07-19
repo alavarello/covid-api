@@ -1,9 +1,9 @@
 import json
 import os
 from datetime import datetime, timedelta
-
+import xlrd
 import pandas as pd
-
+from covid_api.core.models import Province
 from covid_api.settings import COVID_FILE_NAME
 
 
@@ -98,6 +98,53 @@ class CovidService:
         data_frame.to_csv(COVID_FILE_NAME, index=False)
         cls._raw_data = None
 
+    def population_per_province(cls):
+        provinces_population = {}
+        workbook = xlrd.open_workbook('poblacion.xls')
+
+        for worksheet in workbook.sheets():
+            split_name = worksheet.name.split('-')
+            if len(split_name) < 2:
+                continue
+            province_slug = split_name[0]
+            province_name = Province.from_slug(province_slug)
+            if province_name:
+                provinces_population[province_slug] = worksheet.cell(16, 1).value
+                continue
+            else:
+                country_population = worksheet.cell(15, 1).value
+
+        provinces_population['ARG'] = country_population
+
+        return provinces_population
+
+    @classmethod
+    def population_summary_metrics(cls, dfw, slug):
+
+        if slug:
+            population = cls.population_per_province(cls)[slug]
+        else:
+            population = cls.population_per_province(cls)['ARG']
+
+        HUNDRED_THOUSAND = 100000
+        MILLION = 1000000
+        df = dfw.data_frame
+
+        # per hundred thousand
+        df['casos_cada_cien_mil'] = round(df['casos'] * HUNDRED_THOUSAND/population)
+        df['muertes_cada_cien_mil'] = round(df['muertes'] * HUNDRED_THOUSAND/population)
+        df['casos_acum_cada_cien_mil'] = round(df['casos_acum'] * HUNDRED_THOUSAND/population)
+        df['muertes_acum_cada_cien_mil'] = round(df['muertes_acum'] * HUNDRED_THOUSAND/population)
+
+        # per million
+        df['casos_por_millón'] = round(df['casos'] * MILLION / population)
+        df['muertes_por_millón'] = round(df['muertes'] * MILLION  / population)
+        df['casos_acum_por_millón'] = round(df['casos_acum'] * MILLION  / population)
+        df['muertes_acum_por_millón'] = round(df['muertes_acum'] * MILLION  / population)
+
+        return DataFrameWrapper(df)
+
+
     @classmethod
     def summary(cls, group_by_vector, start_date, end_date, data):
 
@@ -106,8 +153,8 @@ class CovidService:
 
         summary = data.data_frame
 
-        range = pd.date_range(start=start_date, end=end_date)
-        range_strings = range.format(formatter=lambda x: x.strftime('%Y-%m-%d'))
+        raw_range = pd.date_range(start=start_date, end=end_date)
+        range_strings = raw_range.format(formatter=lambda x: x.strftime('%Y-%m-%d'))
         df = pd.DataFrame(range_strings, columns=['fecha_diagnostico'])
 
         cases_count = summary.groupby(

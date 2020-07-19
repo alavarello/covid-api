@@ -9,7 +9,6 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_csv.renderers import CSVRenderer
-import pandas as pd
 
 from .models import Province, Classification
 from .services import CovidService, DataFrameWrapper
@@ -114,12 +113,15 @@ class ProvinceSummaryView(ProcessDataView):
         to_date = request.GET.get('to', None)
 
         province = Province.from_slug(province_slug)
+
         summary = data.filter_eq(
             'carga_provincia_nombre',
             province
         )
-
-        summary = CovidService.summary(['carga_provincia_nombre'], from_date, to_date, summary)
+        
+        if province:
+            summary = CovidService.summary(['carga_provincia_nombre'], from_date, to_date, summary)
+            summary = CovidService.population_summary_metrics(summary,province_slug)
 
         return summary
 
@@ -158,6 +160,8 @@ class CountrySummaryView(ProcessDataView):
         to_date = request.GET.get('to', None)
 
         summary = CovidService.summary([], from_date, to_date, data)
+
+        summary = CovidService.population_summary_metrics(summary, None)
 
         return summary
 
