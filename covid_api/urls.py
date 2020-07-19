@@ -16,7 +16,8 @@ schema_view = get_schema_view(
       title="Argentine Covid-19 API",
       default_version='v1',
       description=description,
-      license=openapi.License(name="Creative Commons License"),
+      license=openapi.License(name="Creative Commons License",
+                              url="https://creativecommons.org/licenses/by/4.0/")
    ),
    public=True,
    permission_classes=(permissions.AllowAny,),
