@@ -149,7 +149,9 @@ class CovidService:
     def summary(cls, group_by_vector, start_date, end_date, data):
 
         start_date = start_date if start_date else '2020-02-11'
-        end_date = end_date if end_date else data['ultima_actualizacion'].max()
+
+        if not end_date:
+            end_date = CovidService.get_data()['ultima_actualizacion'].max()
 
         summary = data.data_frame
 
