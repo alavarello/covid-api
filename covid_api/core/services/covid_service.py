@@ -180,4 +180,7 @@ class CovidService:
         df['muertes_acum'] = df['muertes'].cumsum()
         df['casos_acum'] = df['casos'].cumsum()
 
+        df = df.rename(
+            columns={'fecha_diagnostico': "fecha"})
+
         return DataFrameWrapper(df)

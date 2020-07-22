@@ -43,11 +43,16 @@ class ProcessDataView(APIView):
             data = data.filter_eq('fallecido', value)
         from_date = request.GET.get('from', None)
         if from_date is not None:
-            data = data.filter_ge('fecha_diagnostico', from_date)
+            if dead == 'true':
+                data = data.filter_ge('fecha_fallecimiento', from_date)
+            else:
+                data = data.filter_ge('fecha_diagnostico', from_date)
         to_date = request.GET.get('to', None)
         if to_date is not None:
-            data = data.filter_le('fecha_diagnostico', to_date)
-
+            if dead == 'true':
+                data = data.filter_le('fecha_fallecimiento', to_date)
+            else:
+                data = data.filter_le('fecha_diagnostico', to_date)
         return data
 
     def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
@@ -118,7 +123,7 @@ class ProvinceSummaryView(ProcessDataView):
             'carga_provincia_nombre',
             province
         )
-        
+
         if province:
             summary = CovidService.summary(['carga_provincia_nombre'], from_date, to_date, summary)
             summary = CovidService.population_summary_metrics(summary,province_slug)
