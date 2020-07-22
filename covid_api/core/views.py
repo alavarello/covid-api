@@ -186,20 +186,19 @@ class StatsView(APIView):
         dead_per_million = dead_amount * 1000000 / population
         dead_per_hundred_thousand = dead_amount * 100000 / population
         stats = {
-            province_name: {
+                'provincia': province_name,
                 'población': int(population),
                 'muertes_por_millón': round(dead_per_million),
                 'muertes_cada_cien_mil': round(dead_per_hundred_thousand),
                 'casos_por_millón': round(cases_per_million),
                 'casos_cada_cien_mil': round(cases_per_hundred_thousand),
                 'letalidad': round(dead_amount / cases_amount, 4),
-
-            }}
+            }
         return stats
 
     def get(self, requests):
         workbook = xlrd.open_workbook('poblacion.xls')
-        response = {}
+        response = []
         data = CovidService.get_data()
         # Filter the data
         data = data.filter_eq('clasificacion_resumen', 'Confirmado')
@@ -226,7 +225,7 @@ class StatsView(APIView):
                 province_data,
                 population
             )
-            response.update(province_stats)
+            response.append(province_stats)
 
         return Response(response)
 
