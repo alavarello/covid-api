@@ -93,7 +93,7 @@ class CovidService:
     def update_data(cls):
         data_frame = pd.read_csv(
             cls.data_url,
-            encoding='utf-16'
+            encoding='utf-8'
         )
         data_frame.to_csv(COVID_FILE_NAME, index=False)
         cls._raw_data = None
