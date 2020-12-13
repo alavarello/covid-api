@@ -97,6 +97,10 @@ class ProvinceListView(ProcessDataView):
 
     def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> Response:
         province = Province.from_slug(province_slug)
+        if not province:
+            province = None
+        else:
+            province = province['name']
         summary = data.filter_eq(
             'carga_provincia_nombre',
             province
@@ -118,6 +122,10 @@ class ProvinceSummaryView(ProcessDataView):
         to_date = request.GET.get('to', None)
 
         province = Province.from_slug(province_slug)
+        if not province:
+            province = None
+        else:
+            province = province['name']
 
         summary = data.filter_eq(
             'carga_provincia_nombre',
@@ -139,7 +147,10 @@ class ProvincesListView(APIView):
     """
 
     def get(self, request) -> Response:
-        province_array = [{'slug': slug, 'province': province} for slug, province in Province.PROVINCES.items()]
+        province_array = []
+        for slug, prov_data in Province.PROVINCES.items():
+            prov_data['slug'] = slug
+            province_array.append(prov_data)
         return Response(province_array)
 
 
@@ -177,7 +188,7 @@ class StatsView(APIView):
     Returns the provinces and country stats.
     """
 
-    def province_stats(self, province_name, province_data, population):
+    def province_stats(self, province_name, province_data, population, population_m, population_f, lat, long):
         # Get population from 2020
         cases_amount = province_data.count()
         cases_per_million = cases_amount * 1000000 / population
@@ -188,11 +199,15 @@ class StatsView(APIView):
         stats = {
                 'provincia': province_name,
                 'población': int(population),
+                'población_masculina': int(population_m),
+                'población_femenina': int(population_f),
                 'muertes_por_millón': round(dead_per_million),
                 'muertes_cada_cien_mil': round(dead_per_hundred_thousand),
                 'casos_por_millón': round(cases_per_million),
                 'casos_cada_cien_mil': round(cases_per_hundred_thousand),
                 'letalidad': round(dead_amount / cases_amount, 4),
+                'latitude': lat,
+                'longitud': long,
             }
         return stats
 
@@ -208,22 +223,35 @@ class StatsView(APIView):
                 continue
 
             province_slug = split_name[0]
-            province_name = Province.from_slug(province_slug)
-            if province_name:
+            province = Province.from_slug(province_slug)
+            if province:
+                province_name = province['name']
                 province_data = data.copy().filter_eq(
                     'carga_provincia_nombre',
                     province_name
                 )
                 population = worksheet.cell(16, 1).value
+                population_m = worksheet.cell(16, 2).value
+                population_f = worksheet.cell(16, 3).value
+                lat = province['lat']
+                long = province['long']
             else:
                 province_data = data.copy()
                 province_name = "Argentina"
                 population = worksheet.cell(15, 1).value
+                population_m = worksheet.cell(15, 2).value
+                population_f = worksheet.cell(15, 3).value
+                lat = "-36.139516"
+                long = "-65.367861"
 
             province_stats = self.province_stats(
                 province_name,
                 province_data,
-                population
+                population,
+                population_m,
+                population_f,
+                lat,
+                long,
             )
             response.append(province_stats)
 
@@ -239,18 +267,29 @@ class ProvinceStatsView(StatsView):
         data = CovidService.get_data()
         # Filter the data
         data = data.filter_eq('clasificacion_resumen', 'Confirmado')
-        province_name = Province.from_slug(province_slug)
+        province = Province.from_slug(province_slug)
+        if not province:
+            return Response([])
+
+        province_name = province['name']
+
         province_data = data.filter_eq(
             'carga_provincia_nombre',
             province_name
         )
         sheet_name = f'{province_slug}-{province_name.upper()}'
         population = workbook.sheet_by_name(sheet_name).cell(16, 1).value
+        population_m = workbook.sheet_by_name(sheet_name).cell(16, 2).value
+        population_f = workbook.sheet_by_name(sheet_name).cell(16, 3).value
 
         province_stats = self.province_stats(
             province_name,
             province_data,
-            population
+            population,
+            population_m,
+            population_f,
+            province['lat'],
+            province['long']
         )
 
         return Response(province_stats)
