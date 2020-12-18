@@ -1,7 +1,5 @@
-from datetime import datetime
-from itertools import islice
-
 import xlrd
+import json
 from drf_yasg import openapi
 from drf_yasg.openapi import Parameter
 from drf_yasg.utils import swagger_auto_schema
@@ -11,8 +9,16 @@ from rest_framework.views import APIView
 from rest_framework_csv.renderers import CSVRenderer
 
 from .models import Province, Classification
-from .services import CovidService, DataFrameWrapper
+from .services import CovidService, QueryWrapper
 from .parameters import DateParameter, ClassificationParameter
+
+
+# -------- UTILS -------- #
+
+def df_to_json_table(df):
+    df = df.reset_index(drop=True)
+    json_string = df.to_json(orient='table')
+    return json.loads(json_string)['data']
 
 
 # ----- GENERIC VIEWS ----- #
@@ -21,43 +27,52 @@ class ProcessDataView(APIView):
 
     renderer_classes = [JSONRenderer, CSVRenderer]
 
-    def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
-        return data
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.filters = None
 
-    def filter_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
+    def process_data(self, request, query: QueryWrapper, **kwargs):
+        return query.to_json()
+
+    @staticmethod
+    def filter_data(request, query: QueryWrapper, **kwargs):
+        equal_filters = {}
         classification = request.GET.get('classification', None)
         if classification is not None:
             classification = Classification.translate(classification.lower())
-            data.filter_eq('clasificacion_resumen', classification)
+            query.filter_eq('clasificacion_resumen', classification)
+            equal_filters['clasificacion_resumen'] = classification
         icu = request.GET.get('icu', None)
         if icu is not None:
             value = 'SI' if icu.lower() == "true" else 'NO'
-            data = data.filter_eq('cuidado_intensivo', value)
+            query.filter_eq('cuidado_intensivo', value)
+            equal_filters['cuidado_intensivo'] = value
         respirator = request.GET.get('respirator', None)
         if respirator is not None:
             value = 'SI' if respirator.lower() == "true" else 'NO'
-            data = data.filter_eq('asistencia_respiratoria_mecanica', value)
+            query.filter_eq('asistencia_respiratoria_mecanica', value)
+            equal_filters['asistencia_respiratoria_mecanica'] = value
         dead = request.GET.get('dead', None)
         if dead is not None:
             value = 'SI' if dead.lower() == "true" else 'NO'
-            data = data.filter_eq('fallecido', value)
+            query.filter_eq('fallecido', value)
+            equal_filters['fallecido'] = value
         from_date = request.GET.get('from', None)
         if from_date is not None:
             if dead == 'true':
-                data = data.filter_ge('fecha_fallecimiento', from_date)
+                query.filter_ge('fecha_fallecimiento', from_date)
             else:
-                data = data.filter_ge('fecha_diagnostico', from_date)
+                query.filter_ge('fecha_diagnostico', from_date)
         to_date = request.GET.get('to', None)
         if to_date is not None:
             if dead == 'true':
-                data = data.filter_le('fecha_fallecimiento', to_date)
+                query.filter_le('fecha_fallecimiento', to_date)
             else:
-                data = data.filter_le('fecha_diagnostico', to_date)
-        return data
+                query.filter_le('fecha_diagnostico', to_date)
+        return equal_filters
 
-    def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
-
-        return Response(data.to_json())
+    def create_response(self, request, json_obj, **kwargs) -> Response:
+        return Response(json_obj)
 
     @swagger_auto_schema(
         manual_parameters=[
@@ -70,10 +85,11 @@ class ProcessDataView(APIView):
         ],
     )
     def get(self, request, **kwargs):
-        data = CovidService.get_data()
-        data = self.filter_data(request, data, **kwargs)
-        data = self.process_data(request, data, **kwargs)
-        response = self.create_response(request, data, **kwargs)
+        query = CovidService.get_query()
+        self.filters = self.filter_data(request, query, **kwargs)
+        json_obj = self.process_data(request, query, **kwargs)
+        response = self.create_response(request, json_obj, **kwargs)
+        self.filters = None
         return response
 
 
@@ -84,8 +100,11 @@ class CountView(ProcessDataView):
 
     renderer_classes = [JSONRenderer, ]
 
-    def create_response(self, request, data: DataFrameWrapper, **kwargs) -> Response:
-        return Response({'count': data.count()})
+    def process_data(self, request, query: QueryWrapper, **kwargs) -> int:
+        return query.count()
+
+    def create_response(self, request, count, **kwargs) -> Response:
+        return Response({'count': count})
 
 
 # --- PROVINCE VIEWS --- #
@@ -95,49 +114,43 @@ class ProvinceListView(ProcessDataView):
     Returns the cases for the given province
     """
 
-    def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> Response:
+    def process_data(self, request, query: QueryWrapper, province_slug=None, **kwargs):
         province = Province.from_slug(province_slug)
-        if not province:
-            province = None
-        else:
-            province = province['name']
-        summary = data.filter_eq(
+        if province is None:
+            return []
+        return query.filter_eq(
             'carga_provincia_nombre',
-            province
-        )
-        return summary
+            province['name']
+        ).to_json()
 
 
 class ProvinceCountView(ProvinceListView, CountView):
     """
     Returns the amount of cases after applying the filters for the given province
     """
-    pass
+    def process_data(self, request, query: QueryWrapper, province_slug=None, **kwargs):
+        province = Province.from_slug(province_slug)
+        if province is None:
+            return []
+        return query.filter_eq(
+            'carga_provincia_nombre',
+            province['name']
+        ).count()
 
 
 class ProvinceSummaryView(ProcessDataView):
 
-    def process_data(self, request, data: DataFrameWrapper, province_slug=None, **kwargs) -> DataFrameWrapper:
+    def process_data(self, request, query: QueryWrapper, province_slug=None, **kwargs):
         from_date = request.GET.get('from', None)
         to_date = request.GET.get('to', None)
 
         province = Province.from_slug(province_slug)
-        if not province:
-            province = None
-        else:
-            province = province['name']
+        if province is None:
+            return []
 
-        summary = data.filter_eq(
-            'carga_provincia_nombre',
-            province
-        )
-
-        if province:
-            summary = CovidService.summary(['carga_provincia_nombre'], from_date, to_date, summary)
-            summary = CovidService.population_summary_metrics(summary,province_slug)
-
-        return summary
-
+        df = CovidService.summary(province['name'], from_date, to_date, self.filters)
+        df = CovidService.population_summary_metrics(df, province_slug)
+        return df_to_json_table(df)
 
 # --- PROVINCES VIEWS --- #
 
@@ -147,10 +160,7 @@ class ProvincesListView(APIView):
     """
 
     def get(self, request) -> Response:
-        province_array = []
-        for slug, prov_data in Province.PROVINCES.items():
-            prov_data['slug'] = slug
-            province_array.append(prov_data)
+        province_array = [{'slug': slug, **province} for slug, province in Province.PROVINCES.items()]
         return Response(province_array)
 
 
@@ -162,8 +172,7 @@ class LastUpdateView(APIView):
     """
 
     def get(self, request, **kwargs):
-        data = CovidService.get_data()
-        last_update = data['ultima_actualizacion'].max()
+        last_update = CovidService.get_query().get_last_update_date()
         return Response({'last_update': last_update})
 
 
@@ -171,15 +180,13 @@ class LastUpdateView(APIView):
 
 class CountrySummaryView(ProcessDataView):
 
-    def process_data(self, request, data: DataFrameWrapper, **kwargs) -> DataFrameWrapper:
+    def process_data(self, request, data: QueryWrapper, **kwargs) -> QueryWrapper:
         from_date = request.GET.get('from', None)
         to_date = request.GET.get('to', None)
 
-        summary = CovidService.summary([], from_date, to_date, data)
-
-        summary = CovidService.population_summary_metrics(summary, None)
-
-        return summary
+        df = CovidService.summary(None, from_date, to_date, self.filters)
+        df = CovidService.population_summary_metrics(df, None)
+        return df_to_json_table(df)
 
 
 # --- METRICS VIEW --- #
@@ -188,70 +195,55 @@ class StatsView(APIView):
     Returns the provinces and country stats.
     """
 
-    def province_stats(self, province_name, province_data, population, population_m, population_f, lat, long):
+    @staticmethod
+    def province_stats(province_name, query, population):
         # Get population from 2020
-        cases_amount = province_data.count()
+        cases_amount = query.count()
         cases_per_million = cases_amount * 1000000 / population
         cases_per_hundred_thousand = cases_amount * 100000 / population
-        dead_amount = province_data.filter_eq('fallecido', 'SI').count()
+        dead_amount = query.filter_eq('fallecido', 'SI').count()
         dead_per_million = dead_amount * 1000000 / population
         dead_per_hundred_thousand = dead_amount * 100000 / population
         stats = {
                 'provincia': province_name,
                 'población': int(population),
-                'población_masculina': int(population_m),
-                'población_femenina': int(population_f),
-                'muertes_por_millón': round(dead_per_million),
-                'muertes_cada_cien_mil': round(dead_per_hundred_thousand),
-                'casos_por_millón': round(cases_per_million),
-                'casos_cada_cien_mil': round(cases_per_hundred_thousand),
-                'letalidad': round(dead_amount / cases_amount, 4),
-                'latitude': lat,
-                'longitud': long,
+                'muertes_por_millón': round(dead_per_million, 5),
+                'muertes_cada_cien_mil': round(dead_per_hundred_thousand, 5),
+                'casos_por_millón': round(cases_per_million, 5),
+                'casos_cada_cien_mil': round(cases_per_hundred_thousand, 5),
+                'letalidad': cases_amount if cases_amount == 0 else round(dead_amount / cases_amount, 4),
             }
         return stats
 
     def get(self, requests):
         workbook = xlrd.open_workbook('poblacion.xls')
         response = []
-        data = CovidService.get_data()
-        # Filter the data
-        data = data.filter_eq('clasificacion_resumen', 'Confirmado')
+
         for worksheet in workbook.sheets():
             split_name = worksheet.name.split('-')
             if len(split_name) < 2:
                 continue
 
+            # Filter the query
+            query = CovidService.get_query()
+            query.filter_eq('clasificacion_resumen', 'Confirmado')
             province_slug = split_name[0]
             province = Province.from_slug(province_slug)
             if province:
                 province_name = province['name']
-                province_data = data.copy().filter_eq(
+                query.filter_eq(
                     'carga_provincia_nombre',
                     province_name
                 )
                 population = worksheet.cell(16, 1).value
-                population_m = worksheet.cell(16, 2).value
-                population_f = worksheet.cell(16, 3).value
-                lat = province['lat']
-                long = province['long']
             else:
-                province_data = data.copy()
                 province_name = "Argentina"
                 population = worksheet.cell(15, 1).value
-                population_m = worksheet.cell(15, 2).value
-                population_f = worksheet.cell(15, 3).value
-                lat = "-36.139516"
-                long = "-65.367861"
 
             province_stats = self.province_stats(
                 province_name,
-                province_data,
-                population,
-                population_m,
-                population_f,
-                lat,
-                long,
+                query,
+                population
             )
             response.append(province_stats)
 
@@ -264,32 +256,24 @@ class ProvinceStatsView(StatsView):
     """
     def get(self, requests, province_slug=None):
         workbook = xlrd.open_workbook('poblacion.xls')
-        data = CovidService.get_data()
+        data = CovidService.get_query()
         # Filter the data
         data = data.filter_eq('clasificacion_resumen', 'Confirmado')
         province = Province.from_slug(province_slug)
-        if not province:
+        if province is None:
             return Response([])
-
         province_name = province['name']
-
         province_data = data.filter_eq(
             'carga_provincia_nombre',
             province_name
         )
         sheet_name = f'{province_slug}-{province_name.upper()}'
         population = workbook.sheet_by_name(sheet_name).cell(16, 1).value
-        population_m = workbook.sheet_by_name(sheet_name).cell(16, 2).value
-        population_f = workbook.sheet_by_name(sheet_name).cell(16, 3).value
 
         province_stats = self.province_stats(
             province_name,
             province_data,
-            population,
-            population_m,
-            population_f,
-            province['lat'],
-            province['long']
+            population
         )
 
         return Response(province_stats)

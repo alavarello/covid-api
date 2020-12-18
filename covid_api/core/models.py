@@ -1,4 +1,10 @@
 from django.db import models
+from sqlalchemy.ext.declarative import declarative_base
+from dbview.models import DbView
+from dbview.helpers import CreateView
+
+
+Base = declarative_base()
 
 # Create your models here.
 class Province:
@@ -48,3 +54,65 @@ class Classification:
     def translate(cls, classification):
         data_classification = cls.classifications.get(classification)
         return data_classification
+
+
+class CovidCase(models.Model):
+    # TODO: configurar los máximos de los campos a su valor ideal.
+
+    id_evento_caso = models.IntegerField(default=0, primary_key=True)
+    sexo = models.CharField(max_length=1)
+    edad = models.IntegerField(default=0)
+    edad_años_meses = models.CharField(max_length=5)
+    residencia_pais_nombre = models.CharField(max_length=20)
+    residencia_provincia_nombre = models.CharField(max_length=40)
+    residencia_departamento_nombre = models.CharField(max_length=80)
+    carga_provincia_nombre = models.CharField(max_length=20)
+    fecha_inicio_sintomas = models.DateField(null=True)
+    fecha_apertura = models.DateField(null=True)
+    sepi_apertura = models.IntegerField(default=0)
+    fecha_internacion = models.DateField(null=True)
+    cuidado_intensivo = models.CharField(max_length=2)
+    fecha_cui_intensivo = models.DateField(null=True)
+    fallecido = models.CharField(max_length=2)
+    fecha_fallecimiento = models.DateField(null=True)
+    asistencia_respiratoria_mecanica = models.CharField(max_length=2)
+    carga_provincia_id = models.IntegerField(default=0)
+    origen_financiamiento = models.CharField(max_length=20)
+    clasificacion = models.CharField(max_length=80)
+    clasificacion_resumen = models.CharField(max_length=12)
+    residencia_provincia_id = models.IntegerField(default=0)
+    fecha_diagnostico = models.DateField(null=True)
+    residencia_departamento_id = models.IntegerField(default=0)
+    ultima_actualizacion = models.DateField()
+
+
+class CasesSummaryView(DbView):
+    fecha_diagnostico = models.DateField(null=True)
+    carga_provincia_nombre = models.CharField(max_length=20)
+    casos = models.IntegerField(default=0)
+    muertes = models.IntegerField(default=0)
+
+    @classmethod
+    def get_view_str(cls):
+        """
+        This method returns the SQL string that creates the view
+        """
+        return '''
+            CREATE VIEW core_casessummaryview AS 
+                select fecha_diagnostico, carga_provincia_nombre, clasificacion_resumen, cuidado_intensivo, asistencia_respiratoria_mecanica, fallecido, count(*) casos, count(case when fallecido = 'SI' then 1 end) muertes
+                from core_covidcase
+                where fecha_diagnostico is not null
+                group by fecha_diagnostico, carga_provincia_nombre, clasificacion_resumen, cuidado_intensivo, asistencia_respiratoria_mecanica, fallecido
+                order by fecha_diagnostico, carga_provincia_nombre;
+                '''
+
+
+class MyCreateView(CreateView):
+
+    def _drop_view(self, model, schema_editor):
+        sql_template = 'DROP VIEW IF EXISTS %(table)s '
+        args = {
+            'table': schema_editor.quote_name(model._meta.db_table),
+        }
+        sql = sql_template % args
+        schema_editor.execute(sql, None)

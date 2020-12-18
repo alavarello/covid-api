@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     # THIRD PARTIES
     'drf_yasg',
     'django_crontab',
-    'corsheaders'
+    'corsheaders',
+    'dbview'
 ]
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
@@ -69,6 +70,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'TABLE_NAME': 'core_covidcase'
     }
 }
 
@@ -147,7 +149,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-COVID_FILE_NAME = os.path.join(BASE_DIR, 'Covid19Casos.csv')
 
 SWAGGER_URL = env('SWAGGER_URL', '')
