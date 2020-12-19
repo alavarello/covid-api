@@ -53,12 +53,9 @@ class JSONSerializer(Serializer):
 
 
 class CovidService:
+
     TABLE_NAME = settings.DATABASES['default']['TABLE_NAME']
-
-    # _raw_data = None
-
-    # data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
-    data_url = '/Users/pilo/Covid19Casos.csv'
+    data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
 
     # Refresh time in hours
     refresh_rate = 1
@@ -69,25 +66,12 @@ class CovidService:
 
     @classmethod
     def get_query(cls) -> QueryWrapper:
-        # no tiene sentido updatear la información cuando se la pide. De eso se tiene que ocupar el cron job.
-        # if cls.last_refresh:
-        #     refresh_time = cls.last_refresh + timedelta(hours=cls.refresh_rate)
-        #     if refresh_time < datetime.now():
-        #         # Update the data from the url
-        #         cls.update_data()
-        #
-        #         # Get the base hour
-        #         cls.last_refresh = datetime.now().replace(
-        #             minute=0,
-        #             second=0,
-        #             microsecond=0
-        #         )
         return QueryWrapper()
 
     @classmethod
     def update_data(cls):
         # We read the entire CSV
-        print("Reading csv to data frame...", end =" ")
+        print("Downloading csv to data frame...", end=" ")
         data_frame = pd.read_csv(
             cls.data_url,
             encoding='utf-8'
