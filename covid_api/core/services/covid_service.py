@@ -4,9 +4,10 @@ import xlrd
 import pandas as pd
 from django.core.serializers.json import Serializer
 from django.db.models import QuerySet, Max, Sum
-from covid_api.core.models import Province, CovidCase, CasesSummaryView
+from covid_api.core.models import Province, CovidCase
 from django.conf import settings
 from sqlalchemy import create_engine
+import re
 
 
 class QueryWrapper:
@@ -57,7 +58,7 @@ class CovidService:
     # _raw_data = None
 
     # data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
-    data_url = '/Users/pilo/Covid19Casos-short.csv'
+    data_url = '/Users/pilo/Covid19Casos.csv'
 
     # Refresh time in hours
     refresh_rate = 1
@@ -86,27 +87,37 @@ class CovidService:
     @classmethod
     def update_data(cls):
         # We read the entire CSV
+        print("Reading csv to data frame...", end =" ")
         data_frame = pd.read_csv(
             cls.data_url,
             encoding='utf-8'
         )
+        print("Done")
 
         def clean_date_field(date: str):
             # date in the CSV is in the form m/d/yy or broken as null
             # and django needs it in dd-mm-yyyy
             if date is None or type(date) == float:
                 return None
+            # if format is correct, continue
+            pattern = re.compile("^([0-9]{4}-[0-9]{2}-[0-9]{2})$")
+            if bool(pattern.match(date)):
+                return datetime.strptime(date, "%Y-%m-%d").date()
+            # else
             return datetime.strptime(date, "%m/%d/%y").date()
 
         # We clean the date values
         # TODO encontrar otra forma de limpiar esto más eficientemente
+        print("Cleaning Date fields...", end=" ")
         date_fields = ['fecha_inicio_sintomas', 'fecha_apertura', 'fecha_internacion', 'fecha_cui_intensivo', 'fecha_fallecimiento', 'fecha_diagnostico', 'ultima_actualizacion']
         for df in date_fields:
             data_frame[df] = data_frame[df].apply(clean_date_field)
-
+        print("Done")
         # We remove all values from the table BUT WE DO NOT DROP IT
         # TODO En vez de vaciar la tabla, insertar los valores que hayan sido acutalizados
+        print("Deleting prev table...", end=" ")
         CovidCase.objects.all().delete()
+        print("Done")
 
         # We insert the new values
         # TODO encontrar el valor óptimo de chunksize

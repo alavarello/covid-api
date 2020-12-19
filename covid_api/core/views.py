@@ -211,7 +211,7 @@ class StatsView(APIView):
                 'muertes_cada_cien_mil': round(dead_per_hundred_thousand, 5),
                 'casos_por_millón': round(cases_per_million, 5),
                 'casos_cada_cien_mil': round(cases_per_hundred_thousand, 5),
-                'letalidad': cases_amount if cases_amount == 0 else round(dead_amount / cases_amount, 4),
+                'letalidad': cases_amount if cases_amount == 0 else round(dead_amount / cases_amount, 5),
             }
         return stats
 
