@@ -76,7 +76,7 @@ DATABASES = {
 
 CRONTAB_COMMAND_SUFFIX = '2>&1'
 CRONJOBS = [
-    ('00 */4 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
+    ('00 */10 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
 ]
 
 MIDDLEWARE = [

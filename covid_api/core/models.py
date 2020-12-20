@@ -59,7 +59,7 @@ class Classification:
 class CovidCase(models.Model):
     # TODO: configurar los máximos de los campos a su valor ideal.
     class Meta:
-        index_together = [['carga_provincia_nombre', 'clasificacion_resumen']]
+        index_together = [['carga_provincia_nombre', 'clasificacion_resumen', 'fecha_diagnostico', 'fallecido', 'cuidado_intensivo', 'asistencia_respiratoria_mecanica']]
 
     id_evento_caso = models.IntegerField(default=0, primary_key=True)
     sexo = models.CharField(max_length=1, null=True)
