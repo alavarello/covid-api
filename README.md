@@ -67,6 +67,12 @@ Make sure the port 8000 is not being used.
 ```shell script
 gunicorn covid_api.wsgi --workers 3 --timeout 600 --bind 0.0.0.0:8000 -D
 ```
+#### EB deploy
+```
+eb init --region sa-east-1 -p python-3.6 covid_api_django
+eb create django-env
+eb deploy
+```
 
 ## Docs
 ```shell script
