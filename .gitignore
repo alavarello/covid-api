@@ -658,3 +658,6 @@ Covid19Casos.csv
 # Don't commit the logs
 cron.logs
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,python,django,visualstudio
+
+.DS_Store
+

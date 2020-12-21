@@ -1,3 +1,4 @@
 SECRET_KEY=__ADD__ME__
 DEBUG=False
 SWAGGER_URL=https://covid-itba-api.herokuapp.com/api
+CSV_PATH=/tmp/Covid19Casos.csv

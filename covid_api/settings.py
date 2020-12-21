@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     # THIRD PARTIES
     'drf_yasg',
     'django_crontab',
-    'corsheaders'
+    'corsheaders',
+    'dbview'
 ]
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
@@ -69,13 +70,17 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'TABLE_NAME': 'core_covidcase'
     }
 }
 
 CRONTAB_COMMAND_SUFFIX = '2>&1'
 CRONJOBS = [
-    ('00 */4 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
+    ('00 */10 * * *', 'wget https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv -O /tmp/Covid19Casos.csv', f'>> {BASE_DIR}/cron.logs'),
+    ('20 */10 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
 ]
+
+CSV_PATH = env('CSV_PATH')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -147,7 +152,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-COVID_FILE_NAME = os.path.join(BASE_DIR, 'Covid19Casos.csv')
 
 SWAGGER_URL = env('SWAGGER_URL', '')
