@@ -71,7 +71,7 @@ class CovidService:
     @classmethod
     def update_data(cls):
         # We read the entire CSV
-        print("Downloading csv to data frame...", end=" ")
+        print("Reading csv to data frame from {}...".format(cls.data_url), end=" ")
         data_frame = pd.read_csv(
             cls.data_url,
             encoding='utf-8'

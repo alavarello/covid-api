@@ -19,19 +19,22 @@ The global python version must be > 3.6
 
 ```shell script
 # Create a virtual environment
-python -m venv env
+python3 -m venv env
 # Activate
 source env/bin/activate  # On Windows use `env\Scripts\activate`
 
 # Install Django and Django REST framework into the virtual environment
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 # Create .env file
 cp docs/env.txt covid_api/.env  # In development
 cp docs/env_production.txt covid_api/.env # In production
 
+# Download csv
+wget https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv -O /tmp/Covid19Casos.csv
+
 # Run migrations
-python manage.py migrate
+python3 manage.py migrate
 ```
 
 **Important**: Once you copy the env file change the secret key for a random string 
@@ -42,12 +45,12 @@ python manage.py migrate
 
 To add the cron that updates the data.
 ```shell script
-python manage.py crontab add
+python3 manage.py crontab add
 ```
 
 To force the update
 ```shell script
-python manage.py update_data
+python3 manage.py update_data
 ```
 
 **Note**: This may take up to an hour to update.
@@ -59,7 +62,7 @@ python manage.py update_data
 ### Development
 Make sure the port 8000 is not being used.
 ```shell script
-python manage.py runserver
+python3 manage.py runserver
 ```
 
 ### Production

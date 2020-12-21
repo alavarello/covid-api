@@ -76,7 +76,8 @@ DATABASES = {
 
 CRONTAB_COMMAND_SUFFIX = '2>&1'
 CRONJOBS = [
-    ('00 */10 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
+    ('00 */10 * * *', 'wget https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv -O /tmp/Covid19Casos.csv', f'>> {BASE_DIR}/cron.logs'),
+    ('20 */10 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
 ]
 
 CSV_PATH = env('CSV_PATH')
