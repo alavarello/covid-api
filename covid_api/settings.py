@@ -79,7 +79,7 @@ CRONJOBS = [
     ('00 */10 * * *', 'covid_api.core.cron.update_data', f'>> {BASE_DIR}/cron.logs'),
 ]
 
-CSV_PATH = env('CSV_PATH', '/tmp/Covid19Casos.csv')
+CSV_PATH = env('CSV_PATH')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
