@@ -26,12 +26,12 @@ source env/bin/activate  # On Windows use `env\Scripts\activate`
 # Install Django and Django REST framework into the virtual environment
 pip install -r requirements.txt
 
-# Run migrations
-python manage.py migrate
-
 # Create .env file
 cp docs/env.txt covid_api/.env  # In development
 cp docs/env_production.txt covid_api/.env # In production
+
+# Run migrations
+python manage.py migrate
 ```
 
 **Important**: Once you copy the env file change the secret key for a random string 

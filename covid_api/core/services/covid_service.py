@@ -54,8 +54,8 @@ class JSONSerializer(Serializer):
 
 class CovidService:
 
+    data_url = settings.CSV_PATH
     TABLE_NAME = settings.DATABASES['default']['TABLE_NAME']
-    data_url = 'https://sisa.msal.gov.ar/datos/descargas/covid-19/files/Covid19Casos.csv'
 
     # Refresh time in hours
     refresh_rate = 1
