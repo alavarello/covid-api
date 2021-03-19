@@ -1,5 +1,5 @@
 django==3.0.7
-djangorestframework==3.11.0
+djangorestframework==3.11.2
 django-crontab==0.7.1
 drf-yasg==1.17.1
 pandas==1.0.5
